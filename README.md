@@ -659,11 +659,15 @@ MIT License. See [LICENSE](LICENSE) for details.
 ## Acknowledgements
 
 - **[Anthropic](https://anthropic.com)** — Claude Code, the AI engine behind everything
-- **[Daniel Miessler / PAI](https://github.com/danielmiessler/PAI)** — Personal AI Infrastructure foundation
-- **[PortSwigger](https://portswigger.net)** — Burp Suite integration
-- **[ProjectDiscovery](https://projectdiscovery.io)** — Nuclei, httpx, subfinder, naabu
-- **[Playwright](https://playwright.dev)** — Browser automation
-- **[Bun](https://bun.sh)** — TypeScript runtime
+- **[Daniel Miessler / PAI](https://github.com/danielmiessler/PAI)** — Personal AI Infrastructure v3.0 — the foundation layer providing the Algorithm (v1.5.0), 51 skills, 13 expert agents, 20 lifecycle hooks, cross-session memory, and the structured reasoning framework that makes autonomous hunting possible
+- **[Claude Code Superpowers](https://github.com/anthropics/claude-code)** — Official Claude Code plugin enabling enhanced tool access, advanced agent orchestration with team mode, and extended MCP server integration that powers parallel agent deployment
+- **[claude-mem](https://github.com/thedotmack/claude-mem)** — Persistent cross-session memory plugin that enables BugHunter's learning system to remember techniques, patterns, and findings across hunts
+- **[PortSwigger](https://portswigger.net)** — Burp Suite integration via custom MCP bridge
+- **[ProjectDiscovery](https://projectdiscovery.io)** — Nuclei, httpx, subfinder, naabu — the recon backbone
+- **[Playwright](https://playwright.dev)** — Browser automation for dynamic testing and app profiling
+- **[Bun](https://bun.sh)** — TypeScript runtime powering all tools and hooks
+- **[ElevenLabs](https://elevenlabs.io)** — Voice synthesis for the PAI notification and voice system
+- **[ntfy](https://ntfy.sh)** — Push notifications for long-running hunts
 
 ---
 
