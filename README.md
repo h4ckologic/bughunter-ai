@@ -28,7 +28,7 @@
   <img src="https://img.shields.io/badge/Agents-28-orange?style=for-the-badge" alt="28 Agents" />
   <img src="https://img.shields.io/badge/Skills-51-green?style=for-the-badge" alt="51 Skills" />
   <img src="https://img.shields.io/badge/TypeScript-Bun-black?style=for-the-badge&logo=bun" alt="Bun" />
-  <img src="https://img.shields.io/badge/Burp_Suite-MCP-red?style=for-the-badge" alt="Burp MCP" />
+  <img src="https://img.shields.io/badge/Burp_Suite-REST_API-red?style=for-the-badge" alt="Burp Suite REST API" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License" />
 </p>
 
@@ -36,7 +36,7 @@
 
 ## What is BugHunter AI?
 
-BugHunter AI is an **autonomous bug bounty hunting framework** that turns [Claude Code](https://docs.anthropic.com/en/docs/claude-code) into an elite security researcher. Built on top of the **PAI (Personal AI Infrastructure)** system, it combines 20 specialized vulnerability agents, 51 skills, 13 expert AI agents, 20 lifecycle hooks, and a full offensive security toolchain into a single command:
+BugHunter AI is an **autonomous bug bounty hunting framework** that turns [Claude Code](https://docs.anthropic.com/en/docs/claude-code) into an elite security researcher. Built on top of the **PAI (Personal AI Infrastructure)** system, it combines 28 specialized vulnerability agents, 51 skills, 13 expert AI agents, 20 lifecycle hooks, and a full offensive security toolchain into a single command:
 
 ```bash
 # That's it. One command. Autonomous hunting.
@@ -143,13 +143,18 @@ Claude Code's official `superpowers` plugin adds enhanced capabilities:
 | **Filesystem MCP** | Direct file system access |
 | **GitHub MCP** | Repository operations, PR management |
 
-**Recommended Security MCPs:**
-| Server | Purpose | Install |
-|--------|---------|---------|
-| **Shodan** | Internet asset search | `npm install -g @shodan/mcp-server` |
-| **VirusTotal** | Malware/IOC analysis | `npx -y @virustotal/mcp-server` |
-| **CVE/NVD** | Vulnerability database | Custom Python server |
-| **Nuclei** | Vulnerability scanning | Custom Node server |
+**Additional intelligence sources** — none ship with this repo, and no hunt requires
+them. Each is reached over its own REST API from a `Bash` call rather than through an
+MCP server; there is no published Shodan or VirusTotal MCP package. See
+[SETUP.md § 9](SETUP.md#9-optional-intelligence-sources).
+
+| Source | Purpose | How agents reach it |
+|--------|---------|---------------------|
+| **Shodan** | Internet asset search | `api.shodan.io` REST, `SHODAN_API_KEY` |
+| **VirusTotal** | Malware/IOC analysis | `virustotal.com/api/v3` REST, `VIRUSTOTAL_API_KEY` |
+| **CVE/NVD** | Vulnerability database | `services.nvd.nist.gov` REST, `NVD_API_KEY` |
+| **Nuclei** | Vulnerability scanning | `nuclei` CLI (Step 7) |
+| **Burp Suite** | Proxy, scanner, sitemap | `Tools/burp-bridge.ts` CLI over Burp's REST API |
 | **GitHub Security Advisory** | CVE tracking | Via GitHub MCP |
 
 ### Plugins (4 Active)
@@ -343,7 +348,7 @@ hunt https://target.com --mode comprehensive  # comprehensive mode
 
 ## Agents
 
-BugHunter deploys **20 specialized agents**, each an expert in one vulnerability class:
+BugHunter deploys **28 specialized agents**, each an expert in one vulnerability class:
 
 | Agent | Focus | Key Techniques |
 |-------|-------|----------------|
@@ -488,7 +493,7 @@ hunt https://app.example.com --resume
 hunt https://app.example.com using username test@example.com and password TestPass123
 
 Use all available tools, skills, workflows, and MCPs.
-Use Playwright and Burp MCPs to perform dynamic analysis.
+Use the Playwright and Burp harnesses to perform dynamic analysis.
 Map the entire application attack surface.
 Understand the application before attacking.
 Find 10 high-severity vulnerabilities.
@@ -555,7 +560,7 @@ hunt https://target.com --status
 # BugHunter AI Skill (installed to ~/.claude/skills/)
 ~/.claude/skills/BugBountyFramework/
 ├── SKILL.md                     # Main skill definition (v2.0)
-├── Agents/                      # 20 specialized vulnerability agents
+├── Agents/                      # 28 specialized vulnerability agents
 │   ├── AppReviewAgent.md
 │   ├── LLMSecurityAgent.md
 │   ├── XSSAgent.md
@@ -629,8 +634,6 @@ hunt https://target.com --status
 │   ├── LoadContext.hook.ts
 │   ├── handlers/                # 7 hook handlers
 │   └── lib/                     # 12 shared libraries
-├── mcps/                        # Custom MCP servers
-│   └── burp-mcp/
 ├── VoiceServer/                 # ElevenLabs TTS integration
 └── MEMORY/                      # Persistent memory system
     ├── BugBounty/
@@ -708,7 +711,7 @@ MIT License. See [LICENSE](LICENSE) for details.
 - **[Daniel Miessler / PAI](https://github.com/danielmiessler/PAI)** — Personal AI Infrastructure v3.0 — the foundation layer providing the Algorithm (v1.5.0), 51 skills, 13 expert agents, 20 lifecycle hooks, cross-session memory, and the structured reasoning framework that makes autonomous hunting possible
 - **[Claude Code Superpowers](https://github.com/anthropics/claude-code)** — Official Claude Code plugin enabling enhanced tool access, advanced agent orchestration with team mode, and extended MCP server integration that powers parallel agent deployment
 - **[claude-mem](https://github.com/thedotmack/claude-mem)** — Persistent cross-session memory plugin that enables BugHunter's learning system to remember techniques, patterns, and findings across hunts
-- **[PortSwigger](https://portswigger.net)** — Burp Suite integration via custom MCP bridge
+- **[PortSwigger](https://portswigger.net)** — Burp Suite integration via its REST API
 - **[ProjectDiscovery](https://projectdiscovery.io)** — Nuclei, httpx, subfinder, naabu — the recon backbone
 - **[Playwright](https://playwright.dev)** — Browser automation for dynamic testing and app profiling
 - **[Bun](https://bun.sh)** — TypeScript runtime powering all tools and hooks

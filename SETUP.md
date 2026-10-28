@@ -14,7 +14,7 @@ This guide walks you through replicating the **full BugHunter AI infrastructure*
 6. [Install BugHunter AI](#6-install-bughunter-ai)
 7. [Install Security Recon Tools](#7-install-security-recon-tools)
 8. [Configure Burp Suite](#8-configure-burp-suite)
-9. [Install Optional Security MCPs](#9-install-optional-security-mcps)
+9. [Optional Intelligence Sources](#9-optional-intelligence-sources)
 10. [Configure Notifications](#10-configure-notifications)
 11. [Configure the Voice System](#11-configure-the-voice-system)
 12. [Verify the Installation](#12-verify-the-installation)
@@ -253,22 +253,13 @@ Create/edit `~/.claude/.mcp.json` with the core MCP servers:
 ```json
 {
     "mcpServers": {
-        "burp-suite": {
-            "command": "bun",
-            "args": [
-                "/YOUR/HOME/.claude/mcps/burp-mcp/index.ts"
-            ],
-            "env": {
-                "BURP_REST_URL": "http://127.0.0.1:1337/v0.1",
-                "BURP_API_KEY": "${BURP_API_KEY}"
-            }
-        },
         "filesystem": {
             "command": "npx",
             "args": [
                 "-y",
                 "@modelcontextprotocol/server-filesystem",
-                "/YOUR/HOME",
+                "/YOUR/HOME/Projects",
+                "/YOUR/HOME/.claude/MEMORY/BugBounty",
                 "/tmp"
             ]
         },
@@ -288,6 +279,12 @@ Create/edit `~/.claude/.mcp.json` with the core MCP servers:
 
 Replace `/YOUR/HOME` with your actual home directory path.
 
+> **Scope the filesystem server deliberately.** It is reachable by every agent in a
+> hunt, and hunts read untrusted attacker-controlled text (responses, JS bundles,
+> scraped pages). Granting it your whole home directory puts `~/.claude/.env` —
+> which holds every API key below — one prompt injection away from being read. Grant
+> only the directories a hunt needs, and add more only when something actually fails.
+
 ### Set Environment Variables
 
 Add these to your shell profile (`~/.zshrc` or `~/.bashrc`):
@@ -296,7 +293,9 @@ Add these to your shell profile (`~/.zshrc` or `~/.bashrc`):
 # GitHub
 export GITHUB_TOKEN="ghp_your_github_token"
 
-# Burp Suite API (if using Burp MCP)
+# Burp Suite REST API key — read by the hunt workflows' curl calls
+# (see Workflows/W_HUNT_MOBILE.md). burp-bridge.ts does not read it; that tool
+# takes --api-url / --proxy-url flags instead.
 export BURP_API_KEY="your_burp_api_key"
 ```
 
@@ -351,7 +350,7 @@ chmod +x ~/.claude/skills/BugBountyFramework/Tools/*.ts
 # Check skill installed
 ls ~/.claude/skills/BugBountyFramework/SKILL.md
 
-# Check agents installed (should be 20)
+# Check agents installed (should be 28)
 ls ~/.claude/skills/BugBountyFramework/Agents/ | wc -l
 
 # Check tools installed (should be 6)
@@ -396,7 +395,9 @@ subfinder -version && httpx -version && nuclei -version && ffuf -version
 
 ## 8. Configure Burp Suite
 
-BugHunter AI integrates with Burp Suite via a custom MCP bridge.
+BugHunter AI integrates with Burp Suite through `Tools/burp-bridge.ts`, a Bun CLI that
+calls Burp's REST API directly. It is not an MCP server and needs no entry in
+`.mcp.json` — agents invoke it as a command.
 
 ### Enable Burp REST API
 
@@ -405,16 +406,9 @@ BugHunter AI integrates with Burp Suite via a custom MCP bridge.
 3. Enable the REST API on port **1337**
 4. Note your API key
 
-### Install the Burp MCP Bridge
-
-The Burp MCP bridge should already be at `~/.claude/mcps/burp-mcp/`. If not:
-
-```bash
-mkdir -p ~/.claude/mcps/burp-mcp
-# Copy from the PAI installation or create the bridge server
-```
-
 ### Verify Burp Connection
+
+The bridge ships with the skill (Step 6 installs it); there is nothing extra to set up.
 
 ```bash
 # Start Burp Suite first, then:
@@ -424,63 +418,64 @@ bun burp-bridge.ts --health
 
 Expected output: `Burp Suite REST API is healthy`
 
+If you proxy through something other than Burp, point the bridge at it:
+
+```bash
+bun burp-bridge.ts --health --api-url http://127.0.0.1:1337/v0.1 --proxy-url http://127.0.0.1:8080
+```
+
 ---
 
-## 9. Install Optional Security MCPs
+## 9. Optional Intelligence Sources
 
-These MCPs add additional intelligence sources for hunting.
+These are extra intelligence sources you may want. **None of them ship with this
+repo, and none are required** — a hunt runs without them. Read this section as a
+wish list, not as install steps.
+
+> **Verify a package exists before you add it.** Earlier versions of this guide
+> named `@shodan/mcp-server` and `@virustotal/mcp-server`; neither is published on
+> npm (both return 404 from the registry), so the install lines below were dead.
+> Check first:
+>
+> ```bash
+> npm view <package-name> version   # 404 means it does not exist
+> ```
+>
+> If you find a maintained third-party MCP for one of these, treat it the way you
+> would treat any dependency in an offensive toolchain: read its source before you
+> give it an API key.
 
 ### Shodan (Internet Asset Search)
 
+No official Shodan MCP server exists. Shodan's own REST API works fine from a
+`Bash` call, which is how the recon agents already use it.
+
 ```bash
-npm install -g @shodan/mcp-server
-
-# Add to ~/.claude/.mcp.json mcpServers section:
-# "shodan": {
-#     "command": "npx",
-#     "args": ["@shodan/mcp-server"],
-#     "env": { "SHODAN_API_KEY": "${SHODAN_API_KEY}" }
-# }
-
 export SHODAN_API_KEY="your_shodan_api_key"
+curl -s "https://api.shodan.io/shodan/host/search?key=$SHODAN_API_KEY&query=ssl:example.com"
 ```
 
 ### VirusTotal (Malware/IOC Analysis)
 
-```bash
-# Add to ~/.claude/.mcp.json mcpServers section:
-# "virustotal": {
-#     "command": "npx",
-#     "args": ["-y", "@virustotal/mcp-server"],
-#     "env": { "VT_API_KEY": "${VIRUSTOTAL_API_KEY}" }
-# }
+Same situation — use the v3 REST API directly.
 
+```bash
 export VIRUSTOTAL_API_KEY="your_vt_api_key"
+curl -s -H "x-apikey: $VIRUSTOTAL_API_KEY" "https://www.virustotal.com/api/v3/domains/example.com"
 ```
 
 ### CVE/NVD (Vulnerability Database)
 
 ```bash
-# Add to ~/.claude/.mcp.json mcpServers section:
-# "nvd": {
-#     "command": "python3",
-#     "args": ["/YOUR/HOME/.claude/mcps/nvd-mcp/server.py"],
-#     "env": { "NVD_API_KEY": "${NVD_API_KEY}" }
-# }
-
 export NVD_API_KEY="your_nvd_api_key"
+curl -s -H "apiKey: $NVD_API_KEY" \
+  "https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=struts"
 ```
 
-### Nuclei MCP (Vulnerability Scanner)
+### Nuclei (Vulnerability Scanner)
 
-```bash
-# Requires nuclei installed (Step 7)
-# Add to ~/.claude/.mcp.json mcpServers section:
-# "nuclei": {
-#     "command": "node",
-#     "args": ["/YOUR/HOME/.claude/mcps/nuclei-mcp/index.js"]
-# }
-```
+Nuclei is a CLI and the agents call it as one — Step 7 installs it. There is no
+MCP wrapper in this repo.
 
 ---
 
@@ -650,7 +645,7 @@ PAI SKILL.md: OK
 
 === BugHunter AI ===
 Skill: OK
-Agents: 20
+Agents: 28
 Tools: 6
 Memory: OK
 
@@ -736,7 +731,7 @@ export PATH="${PATH}:${GOPATH}/bin"
 | `~/.claude/agents/*.md` | Yes | Agent definitions |
 | `~/.claude/MEMORY/BugBounty/` | Yes | Hunt memory |
 | `~/.claude/VoiceServer/` | Optional | TTS voice system |
-| `~/.claude/mcps/burp-mcp/` | Optional | Burp Suite MCP bridge |
+| `~/.claude/skills/BugBountyFramework/Tools/burp-bridge.ts` | Optional | Burp Suite REST API client (CLI, not an MCP) |
 
 ### Security Skills Included with PAI
 
@@ -792,7 +787,7 @@ ls ~/.claude/hooks/*.hook.ts
 bun ~/.claude/hooks/SecurityValidator.hook.ts --help
 ```
 
-### Burp MCP not connecting
+### Burp REST API not reachable
 
 ```bash
 # Is Burp running?
@@ -802,9 +797,13 @@ curl -s http://127.0.0.1:1337/v0.1/
 # Check Burp REST API is enabled:
 # Burp → Settings → Suite → REST API → Enable on port 1337
 
-# Check BURP_API_KEY is set
+# Check BURP_API_KEY is set (the workflows' curl calls need it)
 echo $BURP_API_KEY
 ```
+
+A listening port 8080 with nothing on 1337 usually means your proxy is running but
+Burp's REST API is off — or that you are proxying through something else (Caido,
+mitmproxy), which has no REST API on 1337 at all.
 
 ### MCP servers not loading
 
