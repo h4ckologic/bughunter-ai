@@ -4,7 +4,7 @@ This project is a Claude Code skill for autonomous bug bounty hunting.
 
 ## Key Files
 - `skills/BugBountyFramework/SKILL.md` — Main skill definition (loaded by Claude Code)
-- `skills/BugBountyFramework/Agents/*.md` — 20 specialized vulnerability agents
+- `skills/BugBountyFramework/Agents/*.md` — 28 specialized vulnerability agents
 - `skills/BugBountyFramework/Tools/*.ts` — TypeScript tools (Bun runtime)
 
 ## How It Works
